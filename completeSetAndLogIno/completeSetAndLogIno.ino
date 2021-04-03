@@ -2,7 +2,7 @@ const int INPUT_PINS[3] = {A0, A1, A2};
 const int currentSensors = 3;
 int sensors[3][5] = {0, 0, 0};
 int sensorsMin[3] = {260, 260, 260};
-int sensorsMax[3] = {615, 640, 620};
+int sensorsMax[3] = {620, 620, 620};
 int sensorsStart[3] = {1000, 1000, 1000};
 int sensorsEnd[3] = {0, 0, 0};
 long sensorsRelayDuration[3] = {1000, 1000, 1000};
@@ -16,8 +16,11 @@ long relayTimers[4] = {0, 0, 0, 0};
 long deltaTime;
 unsigned long oldMillis;
 
+long relayCooldown = 5 * 60 * 1000L; //set default relay cooldown value to 5 minutes
+long currentCooldown;
+
 bool autoLog;
-long logDelay = 30 * 1000L; // read every sixty seconds
+long logDelay = 60 * 1000L; // read every sixty seconds
 long nextLogStep = 0L;
 
 void CheckForLogValuesRequest(char b[12])
@@ -78,6 +81,15 @@ void CheckForValueSetter(char b[12])
     Serial.println(newValue);
     Serial.flush();
   }
+  else if (b[0] == 'r' && b[1] == 'e' && b[2] == 'l')
+  {
+    char valueNo[8] = {b[3], b[4], b[5], b[6], b[7], b[8], b[9], '\0'};
+    long newValue = atol(valueNo);
+    relayCooldown = newValue;
+    Serial.print("Setting relay cooldown value to ");
+    Serial.println(newValue);
+    Serial.flush();
+  }
 }
 
 void CheckForMockSensorValue(char b[12])
@@ -103,6 +115,8 @@ void StartRelay(int relay, long onDuration)
 {
   relayTimers[relay] = onDuration;
   digitalWrite(RELAY_PINS[relay], LOW);
+
+  currentCooldown = relayCooldown;
 
   Serial.print("Opening relay ");
   Serial.print(relay);
@@ -160,6 +174,8 @@ void PrintCurrentSettings()
   }
   Serial.print(", \"log_delay\": ");
   Serial.print(logDelay);
+  Serial.print(", \"relay_cooldown\": ");
+  Serial.print(relayCooldown);
   Serial.println("}");
 }
 
@@ -243,6 +259,7 @@ void setup()
   // Initialize global variables
   oldMillis = millis();
   nextLogStep = 0;
+  currentCooldown = relayCooldown;
 }
 
 long getDeltaTime()
@@ -277,6 +294,21 @@ void SetSensorHistory(int i, int newValue)
       sensors[i][0] = newValue;
 }
 
+void TestRelayStartCondition()
+{
+  // check if relay was started in the last <relayCooldown> minutes
+  if (currentCooldown < 0) 
+  {
+    for(int i=0; i<currentSensors; i++)
+    {
+      if (AverageValue(i) > sensorsStart[i])
+      {
+        StartRelay(i, sensorsRelayDuration[i]);
+      }
+    }
+  }
+}
+
 void LogSensorValues()
 {
   for(int i=0; i<currentSensors; i++)
@@ -290,13 +322,7 @@ void LogSensorValues()
   Serial.println("");
   Serial.flush();
 
-  for(int i=0; i<currentSensors; i++)
-  {
-    if (AverageValue(i) > sensorsStart[i])
-    {
-      StartRelay(i, sensorsRelayDuration[i]);
-    }
-  }
+  TestRelayStartCondition();
 }
 
 void LoggerCountdown()
@@ -324,6 +350,14 @@ void RelayCommandLoop()
   }
 }
 
+void RelayCooldownLoop()
+{
+  if (currentCooldown >= 0)
+  {
+    currentCooldown -= deltaTime;
+  }
+}
+
 void loop()
 {
   deltaTime = getDeltaTime();
@@ -333,4 +367,5 @@ void loop()
   }
   SerialReadLoop();
   RelayCommandLoop();
+  RelayCooldownLoop();
 }

@@ -66,6 +66,7 @@ class SerialConnection:
     def set_settings(self, values):
         print(self._delay)
         self._delay = float(values['log_delay'])
+        self.post_serial_message('rel' + values['relay_cooldown'])
         for i in range(3):
             num = str(i)
             self.post_serial_message('v' + num + 'M' + str(values['sensor'+num]['zero_humidity']))
@@ -99,6 +100,10 @@ class SerialConnection:
 
 
 def main(log_to_file = True):
+
+    import pkg_resources
+    version = pkg_resources.require('humidifier-controller')[0].version
+    print('Starting Humidifier Controller Server, version: ' + version)
 
     config.SERVERTYPE = 'multiplex'
     daemon = Daemon()

@@ -1,0 +1,15 @@
+[Unit]
+Description=Pyro serial server and logger client for humidifier project
+After=network.target
+
+[Service]
+User=simplemind
+Group=simplemind
+WorkingDirectory=/home/simplemind
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 -m humidifier-controller
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+

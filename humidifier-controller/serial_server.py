@@ -3,11 +3,12 @@ import os
 import sys
 from Pyro5.api import expose, Daemon, behavior, locate_ns, start_ns, config
 from .logger_client import Logger
+import json
 
 @behavior(instance_mode='single')
 class SerialConnection:
     def __init__(self, port='', baudrate='9600', reboot=True):
-        self._delay = 10.0
+        self._delay = 60.0
         self._serial = SerialConnection.open_serial_port(port, baudrate, reboot)
         print('Opened serial connection to ' + self._serial.name)
         serial_line = ''
@@ -19,7 +20,7 @@ class SerialConnection:
     def post_message(self, message):
         if message.startswith('log'):
             self._delay = int(message[3:])/1000
-            return 'Set logging timer to ' + str(self._delay)
+            return 'Set logging timer to ' + str(self._delay) + ' seconds.'
         else:
             return self.post_serial_message(message)
 
@@ -54,6 +55,24 @@ class SerialConnection:
         import os
         return os.getcwd()
 
+    @expose
+    def get_settings(self):
+        json_response = self.post_serial_message('stat')
+        response = json.loads(json_response)
+        response['log_delay'] = self.delay
+        return response
+
+    @expose
+    def set_settings(self, values):
+        print(self._delay)
+        self._delay = float(values['log_delay'])
+        for i in range(3):
+            num = str(i)
+            self.post_serial_message('v' + num + 'M' + str(values['sensor'+num]['zero_humidity']))
+            self.post_serial_message('v' + num + 'm' + str(values['sensor'+num]['full_humidity']))
+            self.post_serial_message('v' + num + 's' + str(values['sensor'+num]['relay_start']))
+            self.post_serial_message('v' + num + 'r' + str(values['sensor'+num]['relay_duration']))
+
     def __del__(self):
         self._serial.close()
         print("serial port closed")
@@ -79,14 +98,14 @@ class SerialConnection:
         return serialComm
 
 
-def main():
+def main(log_to_file = True):
 
     config.SERVERTYPE = 'multiplex'
     daemon = Daemon()
 
     def start_client_logger():
         from threading import Thread
-        t = Thread(target=Logger, daemon=True)
+        t = Thread(target=Logger, kwargs={'log_to_file': log_to_file}, daemon=True)
         t.start()
         return t
 

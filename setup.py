@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='humidifier-controller',
-    version='0.1a',
+    version='0.3a1',
     author='Sabin Serban',
     description='Serial server and client to log data from humidity sensors',
     packages=find_packages(include=['humidifier-controller', 'humidifier-controller.*']),

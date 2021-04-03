@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from Pyro5.api import locate_ns, Proxy
+import json
 
 def main():
     input_string = ''
@@ -15,6 +16,11 @@ def main():
         input_string = input('Type your command: ')
         if input_string == 'q':
             break
+        if input_string == 'test':
+            response = serial_server.get_settings()
+            print(json.dumps(response, indent=4))
+            serial_server.set_settings(response)
+            continue
         response = serial_server.post_message(input_string)
         print('Server response is: "' + response[:-2] + '"')
 

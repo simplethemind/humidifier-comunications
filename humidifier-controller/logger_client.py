@@ -31,13 +31,12 @@ class Logger():
                 serial_line = serial_line[:-2]
                 timestamp_line = datetime.datetime.now().strftime('%x %X')
                 print('Returned data: "' + timestamp_line + ',' + serial_line + '"')
-                if not log_to_file:
-                    continue
-                if not os.path.exists(full_filepath):
-                    with open(full_filepath, 'x') as f:
-                        f.write('t,0,1,2\r\n')
-                with open(full_filepath, 'a') as f:
-                    f.write(timestamp_line + "," + serial_line + '\r\n')
+                if log_to_file:
+                    if not os.path.exists(full_filepath):
+                        with open(full_filepath, 'x') as f:
+                            f.write('t,0,1,2\r\n')
+                    with open(full_filepath, 'a') as f:
+                        f.write(timestamp_line + "," + serial_line + '\r\n')
 
                 delay = serial_connection.delay
                 print('Sleeping for ' + str(delay))

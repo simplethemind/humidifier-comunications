@@ -13,3 +13,6 @@
 
 # VSCode folder
 /.vscode/
+
+# Tests folder
+/tests/

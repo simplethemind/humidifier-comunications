@@ -52,27 +52,46 @@ class SerialConnection:
     @expose
     @property
     def working_directory(self):
-        import os
         return os.getcwd()
 
     @expose
     def get_settings(self):
+        # get the values reported by the arduino program
         json_response = self.post_serial_message('stat')
         response = json.loads(json_response)
+        # report the delay currenty used on the server
         response['log_delay'] = self.delay
+        # add followning values from saved json
+        read_values = self.read_settings()
+        for num in range(3):
+            num = str(num)
+            response['sensor' + num]['plant_label'] = read_values['sensor' + num]['plant_label']
+    
         return response
 
     @expose
     def set_settings(self, values):
-        print(self._delay)
-        self._delay = float(values['log_delay'])
-        self.post_serial_message('rel' + values['relay_cooldown'])
-        for i in range(3):
-            num = str(i)
-            self.post_serial_message('v' + num + 'M' + str(values['sensor'+num]['zero_humidity']))
-            self.post_serial_message('v' + num + 'm' + str(values['sensor'+num]['full_humidity']))
-            self.post_serial_message('v' + num + 's' + str(values['sensor'+num]['relay_start']))
-            self.post_serial_message('v' + num + 'r' + str(values['sensor'+num]['relay_duration']))
+        try:
+            self._delay = float(values['log_delay'])
+            self.post_serial_message('rel' + values['relay_cooldown'])
+            for i in range(3):
+                num = str(i)
+                self.post_serial_message('v' + num + 'M' + str(values['sensor'+num]['zero_humidity']))
+                self.post_serial_message('v' + num + 'm' + str(values['sensor'+num]['full_humidity']))
+                self.post_serial_message('v' + num + 's' + str(values['sensor'+num]['relay_start']))
+                self.post_serial_message('v' + num + 'r' + str(values['sensor'+num]['relay_duration']))
+            with open(os.path.join(self.working_directory, 'settings.json'), 'w') as f:
+                f.write(json.dumps(values, indent=4))
+        except:
+            pass
+
+    def read_settings(self):
+        values = {}
+        settings_path = os.path.join(self.working_directory, 'settings.json')
+        if os.path.exists(settings_path):
+            with open(settings_path, 'r') as f:
+                values = json.loads(f.read())
+        return values
 
     def __del__(self):
         self._serial.close()
@@ -149,6 +168,7 @@ def main(log_to_file = True):
                 pass
     
     serial_connection = SerialConnection(baudrate='9600')
+    serial_connection.set_settings(serial_connection.read_settings())
     serial_connection.post_message('\0')
 
     serial_uri = daemon.register(serial_connection)

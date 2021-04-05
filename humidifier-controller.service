@@ -5,7 +5,7 @@ After=network.target
 [Service]
 User=simplemind
 Group=simplemind
-WorkingDirectory=/home/simplemind
+WorkingDirectory=/home/simplemind/.local/share/humidifier
 Environment=PYTHONUNBUFFERED=1
 ExecStart=/usr/bin/python3 -m humidifier-controller
 Restart=always

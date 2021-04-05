@@ -64,8 +64,11 @@ class SerialConnection:
         # add followning values from saved json
         read_values = self.read_settings()
         for num in range(3):
-            num = str(num)
-            response['sensor' + num]['plant_label'] = read_values['sensor' + num]['plant_label']
+            try:
+                num = str(num)
+                response['sensor' + num]['plant_label'] = read_values['sensor' + num]['plant_label']
+            except:
+                pass
     
         return response
 
@@ -88,9 +91,11 @@ class SerialConnection:
     def read_settings(self):
         values = {}
         settings_path = os.path.join(self.working_directory, 'settings.json')
-        if os.path.exists(settings_path):
+        try:
             with open(settings_path, 'r') as f:
                 values = json.loads(f.read())
+        except:
+            pass
         return values
 
     def __del__(self):

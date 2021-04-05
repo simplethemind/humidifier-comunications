@@ -4,7 +4,7 @@ import pathlib
 
 setup(
     name='humidifier-controller',
-    version='0.5a4',
+    version='0.5a5',
     author='Sabin Serban',
     description='Serial server and client to log data from humidity sensors',
     packages=find_packages(include=['humidifier-controller', 'humidifier-controller.*']),

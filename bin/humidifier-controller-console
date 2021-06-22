@@ -6,6 +6,8 @@ import json
 def main():
     input_string = ''
     print('Type "q" to exit')
+    print('Type "sr" to read current sensor data')
+    print('Type "r[relay_no : digit]d[duration_in_ms : long]" to manually start relay.')
 
     serial_server = None
     with locate_ns() as ns:
